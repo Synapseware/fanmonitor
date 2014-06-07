@@ -2,3 +2,6 @@
 	path = libs
 	url = git@github.com:Synapseware/libs.git
 
+[submodule "v-usb"]
+	path = v-usb
+	url = https://github.com/obdev/v-usb.git

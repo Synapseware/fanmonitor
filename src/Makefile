@@ -45,7 +45,7 @@
 
 
 # MCU name
-MCU = m168
+MCU = atmega168
 
 # Fuse values
 L_FUSE = 0xFF
@@ -72,7 +72,7 @@ OBJDIR = .
 
 
 # path to V-USB
-VUSBDIR = ../../v-usb/vusb-20121206
+VUSBDIR = .
 
 
 # Shared source code
@@ -80,9 +80,8 @@ SHARED = ../libs
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC =	$(TARGET).c						\
+SRC =	$(TARGET).c							\
 		$(VUSBDIR)/usbdrv/usbdrv.c
-
 
 # List library files here
 #PRINTF_LIB_MIN = -Wl,-u,vfprintf -lprintf_min
@@ -100,7 +99,7 @@ CPPSRC =
 #     Even though the DOS/Win* filesystem matches both .s and .S the same,
 #     it will preserve the spelling of the filenames, and gcc itself does
 #     care about how the name is spelled on its command-line.
-ASRC = $(VUSBDIR)/usbdrv/usbdrvasm.S
+ASRC = ./usbdrv/usbdrvasm.S
 
 
 # Optimization level, can be [0, 1, 2, 3, s]. 
@@ -403,7 +402,6 @@ all: begin gccversion sizebefore usbdrv build sizeafter end
 
 # Change the build target to build a HEX file or a library.
 build: elf hex eep lss sym
-#build: lib
 
 
 elf: $(TARGET).elf
@@ -411,8 +409,6 @@ hex: $(TARGET).hex
 eep: $(TARGET).eep
 lss: $(TARGET).lss
 sym: $(TARGET).sym
-lib: $(LIBNAME)
-
 
 
 # Eye candy.
@@ -514,7 +510,8 @@ extcoff: $(TARGET).elf
 
 # Since we don't want to ship the driver multipe times, we copy it into this project:
 usbdrv:
-	cp -r ../usbdrv .
+	@echo Copying USBDRV folder to project
+	cp -r ../v-usb/usbdrv .
 
 
 # Create final output files (.hex, .eep) from ELF output file.
@@ -617,6 +614,7 @@ clean_list :
 	$(REMOVE) $(SRC:.c=.s)
 	$(REMOVE) $(SRC:.c=.d)
 	$(REMOVE) $(SRC:.c=.i)
+	$(REMOVEDIR) usbdrv/
 	$(REMOVEDIR) .dep
 
 

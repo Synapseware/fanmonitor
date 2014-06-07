@@ -4,6 +4,8 @@ default/
 /_tools
 /_docs
 /_bootloaders
+/src/usbdrv
+__avr_gdbinit
 ext.txt
 low.txt
 high.txt
@@ -28,9 +30,6 @@ Visual Micro/
 **.opensdf
 **.sdf
 
-
-#Ignore specific arduino release folders
-arduino/arduino-1.0.5/
 
 #Ignore build artifacts
 *.o
