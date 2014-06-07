@@ -32,10 +32,6 @@
 #
 # make rfuses = Read current fuse values
 #
-# make reeprom	= Read all EEPROM to .\eeprom.txt
-#
-# make weeprom = Write .\eeprom.txt to EEPROM
-#
 # make debug = Start either simulavr or avarice as specified for debugging, 
 #              with avr-gdb or avr-insight as the front end for debugging.
 #
@@ -49,7 +45,7 @@
 
 
 # MCU name
-MCU = atmega168
+MCU = m168
 
 # Fuse values
 L_FUSE = 0xFF
@@ -58,23 +54,6 @@ E_FUSE = 0xF9
 
 
 # Processor frequency.
-#     This will define a symbol, F_CPU, in all source code files equal to the 
-#     processor frequency. You can then use this symbol in your source code to 
-#     calculate timings. Do NOT tack on a 'UL' at the end, this will be done
-#     automatically to create a 32-bit value in your source code.
-#     Typical values are:
-#         F_CPU =  1000000
-#         F_CPU =  1843200
-#         F_CPU =  2000000
-#         F_CPU =  3686400
-#         F_CPU =  4000000
-#         F_CPU =  7372800
-#         F_CPU =  8000000
-#         F_CPU = 11059200
-#         F_CPU = 14745600
-#         F_CPU = 16000000
-#         F_CPU = 18432000
-#         F_CPU = 20000000
 F_CPU = 20000000
 
 
@@ -97,7 +76,7 @@ VUSBDIR = ../../v-usb/vusb-20121206
 
 
 # Shared source code
-SHARED = ../../../libs
+SHARED = ../libs
 
 
 # List C source files here. (C dependencies are automatically generated.)
@@ -154,8 +133,10 @@ CSTANDARD = -std=gnu99
 
 # Place -D or -U options here for C sources
 CDEFS = -DF_CPU=$(F_CPU)UL
+
 # Place -D or -U options here for ASM sources
 ADEFS = -DF_CPU=$(F_CPU)
+
 
 # Place -D or -U options here for C++ sources
 CPPDEFS = -DF_CPU=$(F_CPU)UL
@@ -182,7 +163,7 @@ CFLAGS += -Wall
 CFLAGS += -Wstrict-prototypes
 #CFLAGS += -mshort-calls
 #CFLAGS += -fno-unit-at-a-time
-CFLAGS += -Wundef
+#CFLAGS += -Wundef
 CFLAGS += -Wunreachable-code
 CFLAGS += -Wsign-compare
 CFLAGS += -Wa,-adhlns=$(<:%.c=$(OBJDIR)/%.lst)
@@ -261,7 +242,7 @@ MATH_LIB = -lm
 #     Each directory must be seperated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
-EXTRALIBDIRS = $(SHARED)
+EXTRALIBDIRS = $(SHARED) ../../usbdrv
 
 
 
@@ -298,7 +279,8 @@ LDFLAGS += $(LIBS)
 # Type: avrdude -c ?
 # to get a full listing.
 #
-AVRDUDE_PROGRAMMER = usbtiny -B 1
+AVRDUDE_PROGRAMMER = stk500v2
+# -B 2
 
 # com1 = serial port. Use lpt1 to connect to parallel port.
 AVRDUDE_PORT = com6    # programmer connected to serial device
@@ -417,7 +399,7 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
 # Default target.
-all: begin gccversion sizebefore build sizeafter end
+all: begin gccversion sizebefore usbdrv build sizeafter end
 
 # Change the build target to build a HEX file or a library.
 build: elf hex eep lss sym
@@ -457,16 +439,12 @@ sizeafter:
 	@if test -f $(TARGET).elf; then echo; echo $(MSG_SIZE_AFTER); $(ELFSIZE); \
 	2>/dev/null; echo; fi
 
-reeprom:
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -U eeprom:r:.\eeprom.txt:d
-
-#weeprom:
-#	$(AVRDUDE) $(AVRDUDE_FLAGS) -U eeprom:w:.\eeprom.txt:d
 
 
 # Display compiler version information.
-gccversion: 
+gccversion : 
 	@$(CC) --version
+
 
 
 # Program the device.  
@@ -478,10 +456,9 @@ program: $(TARGET).hex $(TARGET).eep
 wfuses:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -U lfuse:w:$(L_FUSE):m -U hfuse:w:$(H_FUSE):m -U efuse:w:$(E_FUSE):m
 
-
 # Read fuse values
 rfuses:
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -U lfuse:r:.\low.txt:h -U hfuse:r:.\high.txt:h -U efuse:r:.\ext.txt:h
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -U hfuse:r:./high.txt:h -U lfuse:r:./low.txt:h -U efuse:r:./ext.txt:h
 
 
 # Generate avr-gdb config/init file which does the following:
@@ -535,6 +512,9 @@ extcoff: $(TARGET).elf
 	@echo $(MSG_EXTENDED_COFF) $(TARGET).cof
 	$(COFFCONVERT) -O coff-ext-avr $< $(TARGET).cof
 
+# Since we don't want to ship the driver multipe times, we copy it into this project:
+usbdrv:
+	cp -r ../usbdrv .
 
 
 # Create final output files (.hex, .eep) from ELF output file.
@@ -561,8 +541,6 @@ extcoff: $(TARGET).elf
 	@echo $(MSG_SYMBOL_TABLE) $@
 	$(NM) -n $< > $@
 
-
-
 # Create library from object files.
 .SECONDARY : $(TARGET).a
 .PRECIOUS : $(OBJ)
@@ -581,18 +559,18 @@ extcoff: $(TARGET).elf
 	$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
 
 
-# Compile: create object files from C source files.
-$(OBJDIR)/%.o : %.c
-	@echo
-	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
-
-
 # Compile: create object files from C++ source files.
 $(OBJDIR)/%.o : %.cpp
 	@echo
 	@echo $(MSG_COMPILING_CPP) $<
 	$(CC) -c $(ALL_CPPFLAGS) $< -o $@ 
+
+
+# Compile: create object files from C source files.
+$(OBJDIR)/%.o : %.c
+	@echo
+	@echo $(MSG_COMPILING) $<
+	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
 
 
 # Compile: create assembler files from C source files.

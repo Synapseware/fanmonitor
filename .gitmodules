@@ -1,0 +1,4 @@
+[submodule "libs"]
+	path = libs
+	url = git@github.com:Synapseware/libs.git
+
